@@ -17,9 +17,17 @@ func TestValidateJSON(t *testing.T) {
 	}{
 		{input: "{}", isValid: true},
 		{input: " \t{\n\r} ", isValid: true},
+		{input: `{"key":"value"}`, isValid: true},
+		{input: `{"key":"value","other":"text"}`, isValid: true},
+		{input: `{"key":"a,b:c"}`, isValid: true},
+		{input: `{"key":"escaped quote: \"ok\""}`, isValid: true},
 		{input: "", isValid: false},
 		{input: "[]", isValid: false},
 		{input: "{ x }", isValid: false},
+		{input: `{"key":1}`, isValid: false},
+		{input: `{"key":}`, isValid: false},
+		{input: `{"key":"value",}`, isValid: false},
+		{input: `{"key":"value" "other":"text"}`, isValid: false},
 		{input: "{}{}", isValid: false},
 		{input: "{} trailing", isValid: false},
 		{input: "{\u00a0}", isValid: false},
@@ -69,18 +77,35 @@ func TestTokenize(t *testing.T) {
 			wantTokens: []token{},
 		},
 		{
-			name: "escaped string",
+			name:  "escaped string",
 			input: `"quote: \" slash: \\ unicode: \u0041"`,
 			wantTokens: []token{
 				{kind: tokenString, lexeme: `"quote: \" slash: \\ unicode: \u0041"`, offset: 0},
 			},
 		},
+		{
+			name:  "punctuation inside string",
+			input: `"a,b:c"`,
+			wantTokens: []token{
+				{kind: tokenString, lexeme: `"a,b:c"`, offset: 0},
+			},
+		},
+		{
+			name:  "escaped quotes inside string",
+			input: `"escaped quote: \"ok\""`,
+			wantTokens: []token{
+				{kind: tokenString, lexeme: `"escaped quote: \"ok\""`, offset: 0},
+			},
+		},
 		{name: "unquoted text", input: `{ key: "value" }`, wantErr: true},
 		{name: "unterminated string", input: `"value`, wantErr: true},
+		{name: "trailing backslash", input: `"trailing backslash\`, wantErr: true},
 		{name: "invalid escape", input: `"value\q"`, wantErr: true},
 		{name: "incomplete Unicode escape", input: `"\u12"`, wantErr: true},
+		{name: "invalid Unicode hex digit", input: `"\u12G4"`, wantErr: true},
 		{name: "unescaped control character", input: "\"line\nbreak\"", wantErr: true},
 		{name: "non-breaking space outside string", input: "{\u00a0}", wantErr: true},
+		{name: "invalid UTF-8 in string", input: string([]byte{'"', 0xff, '"'}), wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -134,7 +159,7 @@ func TestCLI(t *testing.T) {
 		wantExit       int
 	}{
 		{name: "valid JSON", args: []string{validPath}, wantStdout: "Valid JSON\n", wantExit: 0},
-		{name: "invalid JSON", args: []string{invalidObjectPath}, wantStderr: "Invalid JSON: expected only whitespace between object braces\n", wantExit: 1},
+		{name: "invalid JSON", args: []string{invalidObjectPath}, wantStderrPart: "Invalid JSON:", wantExit: 1},
 		{name: "no file path", wantStderr: "Usage: json-parser <file>\n", wantExit: 2},
 		{name: "multiple file paths", args: []string{validPath, invalidPath}, wantStderr: "Usage: json-parser <file>\n", wantExit: 2},
 		{name: "file cannot be read", args: []string{filepath.Join(tempDir, "missing.json")}, wantStderrPart: "Error reading file:", wantExit: 2},

@@ -57,6 +57,10 @@ func TestCLI(t *testing.T) {
 	if err := os.WriteFile(invalidPath, []byte("{"), 0600); err != nil {
 		t.Fatalf("write invalid input: %v", err)
 	}
+	invalidObjectPath := filepath.Join(tempDir, "invalid-object.json")
+	if err := os.WriteFile(invalidObjectPath, []byte("{ x }"), 0600); err != nil {
+		t.Fatalf("write invalid object input: %v", err)
+	}
 
 	tests := []struct {
 		name           string
@@ -67,7 +71,7 @@ func TestCLI(t *testing.T) {
 		wantExit       int
 	}{
 		{name: "valid JSON", args: []string{validPath}, wantStdout: "Valid JSON\n", wantExit: 0},
-		{name: "invalid JSON", args: []string{invalidPath}, wantStdout: "Invalid JSON\n", wantExit: 1},
+		{name: "invalid JSON", args: []string{invalidObjectPath}, wantStderr: "Invalid JSON: expected only whitespace between object braces\n", wantExit: 1},
 		{name: "no file path", wantStderr: "Usage: json-parser <file>\n", wantExit: 2},
 		{name: "multiple file paths", args: []string{validPath, invalidPath}, wantStderr: "Usage: json-parser <file>\n", wantExit: 2},
 		{name: "file cannot be read", args: []string{filepath.Join(tempDir, "missing.json")}, wantStderrPart: "Error reading file:", wantExit: 2},

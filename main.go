@@ -21,12 +21,12 @@ func run() int {
 		return 2
 	}
 
-	isValid, _ := ValidateJSON(string(input))
+	isValid, errorMessage := ValidateJSON(string(input))
 	if isValid {
 		fmt.Fprintln(os.Stdout, "Valid JSON")
 		return 0
 	}
 
-	fmt.Fprintln(os.Stdout, "Invalid JSON")
+	fmt.Fprintf(os.Stderr, "Invalid JSON: %s\n", errorMessage)
 	return 1
 }

@@ -41,6 +41,69 @@ func TestValidateJSON(t *testing.T) {
 	}
 }
 
+func TestTokenize(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      string
+		wantTokens []token
+		wantErr    bool
+	}{
+		{
+			name:  "punctuation and strings",
+			input: ` { "key" : "value" , "other": "text" } `,
+			wantTokens: []token{
+				{kind: tokenLeftBrace, lexeme: "{", offset: 1},
+				{kind: tokenString, lexeme: `"key"`, offset: 3},
+				{kind: tokenColon, lexeme: ":", offset: 9},
+				{kind: tokenString, lexeme: `"value"`, offset: 11},
+				{kind: tokenComma, lexeme: ",", offset: 19},
+				{kind: tokenString, lexeme: `"other"`, offset: 21},
+				{kind: tokenColon, lexeme: ":", offset: 28},
+				{kind: tokenString, lexeme: `"text"`, offset: 30},
+				{kind: tokenRightBrace, lexeme: "}", offset: 37},
+			},
+		},
+		{
+			name:       "only permitted whitespace",
+			input:      " \t\n\r",
+			wantTokens: []token{},
+		},
+		{
+			name: "escaped string",
+			input: `"quote: \" slash: \\ unicode: \u0041"`,
+			wantTokens: []token{
+				{kind: tokenString, lexeme: `"quote: \" slash: \\ unicode: \u0041"`, offset: 0},
+			},
+		},
+		{name: "unquoted text", input: `{ key: "value" }`, wantErr: true},
+		{name: "unterminated string", input: `"value`, wantErr: true},
+		{name: "invalid escape", input: `"value\q"`, wantErr: true},
+		{name: "incomplete Unicode escape", input: `"\u12"`, wantErr: true},
+		{name: "unescaped control character", input: "\"line\nbreak\"", wantErr: true},
+		{name: "non-breaking space outside string", input: "{\u00a0}", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tokenize(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("tokenize(%q) error = %v, wantErr %t", tt.input, err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			if len(got) != len(tt.wantTokens) {
+				t.Fatalf("tokenize(%q) returned %d tokens, want %d", tt.input, len(got), len(tt.wantTokens))
+			}
+			for i := range got {
+				if got[i] != tt.wantTokens[i] {
+					t.Errorf("token %d = %#v, want %#v", i, got[i], tt.wantTokens[i])
+				}
+			}
+		})
+	}
+}
+
 func TestCLI(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "json-parser")

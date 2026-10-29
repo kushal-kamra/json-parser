@@ -14,3 +14,10 @@ errors are also reported on stderr, with status 2. `go test ./...` covers valid
 
 empty input, arrays, non-whitespace object contents, multiple objects, trailing
 content, and non-breaking space.
+
+## Step 2 tokenizer
+
+The tokenizer recognizes object braces, colons, commas, and quoted strings,
+skipping only JSON-permitted whitespace. String escapes and control characters
+are checked lexically. The parser and Step 2 object validation are not
+implemented yet.

@@ -160,6 +160,100 @@ func TestTokenize(t *testing.T) {
 	}
 }
 
+func TestPrimitiveValueDelimiters(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		parse    func(string) (int, token, error)
+		wantEnd  int
+		wantKind tokenType
+		wantErr  bool
+	}{
+		{
+			name:     "literal followed by closing brace",
+			input:    "true}",
+			wantEnd:  4,
+			wantKind: tokenTrue,
+			parse: func(input string) (int, token, error) {
+				return tokenizeLiteral(input, 0, "true", tokenTrue)
+			},
+		},
+		{
+			name:     "literal followed by comma",
+			input:    "true,",
+			wantEnd:  4,
+			wantKind: tokenTrue,
+			parse: func(input string) (int, token, error) {
+				return tokenizeLiteral(input, 0, "true", tokenTrue)
+			},
+		},
+		{
+			name:     "literal followed by whitespace",
+			input:    "true ",
+			wantEnd:  4,
+			wantKind: tokenTrue,
+			parse: func(input string) (int, token, error) {
+				return tokenizeLiteral(input, 0, "true", tokenTrue)
+			},
+		},
+		{
+			name:     "literal at end of input",
+			input:    "true",
+			wantEnd:  4,
+			wantKind: tokenTrue,
+			parse: func(input string) (int, token, error) {
+				return tokenizeLiteral(input, 0, "true", tokenTrue)
+			},
+		},
+		{
+			name:    "literal followed by text",
+			input:   "trueValue",
+			parse:   func(input string) (int, token, error) { return tokenizeLiteral(input, 0, "true", tokenTrue) },
+			wantErr: true,
+		},
+		{
+			name:     "number followed by closing bracket",
+			input:    "12]",
+			wantEnd:  2,
+			wantKind: tokenNumber,
+			parse: func(input string) (int, token, error) {
+				return tokenizeNumber(input, 0)
+			},
+		},
+		{
+			name:     "number at end of input",
+			input:    "12",
+			wantEnd:  2,
+			wantKind: tokenNumber,
+			parse:    func(input string) (int, token, error) { return tokenizeNumber(input, 0) },
+		},
+		{
+			name:    "number followed by text",
+			input:   "12abc",
+			parse:   func(input string) (int, token, error) { return tokenizeNumber(input, 0) },
+			wantErr: true,
+		},
+		{
+			name:    "number followed by second decimal point",
+			input:   "12.3.4",
+			parse:   func(input string) (int, token, error) { return tokenizeNumber(input, 0) },
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			end, got, err := tt.parse(tt.input)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("parse(%q) error = %v, wantErr %t", tt.input, err, tt.wantErr)
+			}
+			if err == nil && (end != tt.wantEnd || got.kind != tt.wantKind || got.lexeme != tt.input[:end]) {
+				t.Errorf("parse(%q) = (%d, %#v), want end %d and token kind %d", tt.input, end, got, tt.wantEnd, tt.wantKind)
+			}
+		})
+	}
+}
+
 func TestCLI(t *testing.T) {
 	tempDir := t.TempDir()
 	binaryPath := filepath.Join(tempDir, "json-parser")

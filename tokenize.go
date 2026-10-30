@@ -95,6 +95,9 @@ func tokenizeLiteral(input string, start int, literal string, kind tokenType) (i
 	}
 
 	end := start + len(literal)
+	if end < len(input) && !isValueDelimiter(input[end]) {
+		return 0, token{}, fmt.Errorf("invalid literal at byte %d", start)
+	}
 	return end, token{kind: kind, lexeme: literal, offset: start}, nil
 }
 
@@ -145,7 +148,15 @@ func tokenizeNumber(input string, start int) (int, token, error) {
 		}
 	}
 
+	if i < len(input) && !isValueDelimiter(input[i]) {
+		return 0, token{}, fmt.Errorf("invalid number at byte %d", start)
+	}
+
 	return i, token{kind: tokenNumber, lexeme: input[start:i], offset: start}, nil
+}
+
+func isValueDelimiter(char byte) bool {
+	return isJSONWhitespace(char) || char == ',' || char == '}' || char == ']'
 }
 
 func isDigit(char byte) bool {

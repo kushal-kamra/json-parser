@@ -16,8 +16,9 @@ trailing content.
 
 ## Step 2 tokenizer and parser
 
-The tokenizer recognizes object braces, colons, commas, and quoted strings,
+The tokenizer recognizes object and array delimiters, colons, commas, and quoted strings,
 skipping only JSON-permitted whitespace. String escapes and control characters
 are checked lexically. Numbers and the `true`, `false`, and `null` literals use
 distinct token types. The parser consumes the complete token sequence and
-validates objects with string keys and string, number, boolean, or `null` values.
+validates objects with string keys and recursively nested object and array values,
+as well as string, number, boolean, or `null` values.

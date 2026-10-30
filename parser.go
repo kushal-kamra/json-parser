@@ -53,15 +53,41 @@ func (p *parser) parseObject() error {
 
 func (p *parser) parseValue() error {
 	if p.cursor == len(p.tokens) {
-		return fmt.Errorf("unexpected end of input; expected object value")
+		return fmt.Errorf("unexpected end of input; expected JSON value")
 	}
 
 	switch p.tokens[p.cursor].kind {
 	case tokenString, tokenNumber, tokenTrue, tokenFalse, tokenNull:
 		p.cursor++
 		return nil
+	case tokenLeftBrace:
+		return p.parseObject()
+	case tokenLeftBracket:
+		return p.parseArray()
 	default:
-		return p.unexpectedToken("object value")
+		return p.unexpectedToken("JSON value")
+	}
+}
+
+func (p *parser) parseArray() error {
+	if err := p.expect(tokenLeftBracket, "["); err != nil {
+		return err
+	}
+	if p.consume(tokenRightBracket) {
+		return nil
+	}
+
+	for {
+		if err := p.parseValue(); err != nil {
+			return err
+		}
+
+		if p.consume(tokenRightBracket) {
+			return nil
+		}
+		if err := p.expect(tokenComma, ", or ]"); err != nil {
+			return err
+		}
 	}
 }
 

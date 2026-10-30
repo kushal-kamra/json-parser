@@ -17,6 +17,8 @@ const (
 	tokenTrue
 	tokenFalse
 	tokenNull
+	tokenLeftBracket
+	tokenRightBracket
 )
 
 type token struct {
@@ -39,6 +41,12 @@ func tokenize(input string) ([]token, error) {
 			i++
 		case '}':
 			tokens = append(tokens, token{kind: tokenRightBrace, lexeme: "}", offset: i})
+			i++
+		case '[':
+			tokens = append(tokens, token{kind: tokenLeftBracket, lexeme: "[", offset: i})
+			i++
+		case ']':
+			tokens = append(tokens, token{kind: tokenRightBracket, lexeme: "]", offset: i})
 			i++
 		case ':':
 			tokens = append(tokens, token{kind: tokenColon, lexeme: ":", offset: i})

@@ -38,7 +38,7 @@ func (p *parser) parseObject() error {
 		if err := p.expect(tokenColon, ":"); err != nil {
 			return err
 		}
-		if err := p.expect(tokenString, "string object value"); err != nil {
+		if err := p.parseValue(); err != nil {
 			return err
 		}
 
@@ -48,6 +48,20 @@ func (p *parser) parseObject() error {
 		if err := p.expect(tokenComma, ", or }"); err != nil {
 			return err
 		}
+	}
+}
+
+func (p *parser) parseValue() error {
+	if p.cursor == len(p.tokens) {
+		return fmt.Errorf("unexpected end of input; expected object value")
+	}
+
+	switch p.tokens[p.cursor].kind {
+	case tokenString, tokenNumber, tokenTrue, tokenFalse, tokenNull:
+		p.cursor++
+		return nil
+	default:
+		return p.unexpectedToken("object value")
 	}
 }
 
